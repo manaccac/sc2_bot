@@ -1,4 +1,5 @@
 import sc2
+import random
 from sc2 import BotAI, Race
 from sc2.ids.unit_typeid import UnitTypeId
 from sc2.ids.ability_id import AbilityId
@@ -21,7 +22,9 @@ class CompetitiveBot(BotAI):
 	"""
 
 	def __init__(self):
+		self.first_attack = False
 		self.proxy_built = False
+		self.late_game = False
 
 	async def on_start(self):
 		print("Game started")
@@ -154,14 +157,20 @@ class CompetitiveBot(BotAI):
 	async def attack(self):
 		stalkercount = self.units(UnitTypeId.STALKER).amount
 		stalkers = self.units(UnitTypeId.STALKER).ready.idle
+		target = self.structures.random_or(self.enemy_start_locations[0]).position
 		
 		if self. structures(UnitTypeId.PYLON).ready:
 			proxy = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
 			proxyposition = proxy.position.random_on_distance(3)
 
 		for stalker in stalkers:
-			if stalkercount > 8:
-				stalker.attack(self.enemy_start_locations[0])
+			if stalkercount >= 8:
+				targets = (self.enemy_units | self.enemy_structures).filter(lambda unit: unit.can_be_attacked)
+				if targets:
+					target = targets.closest_to(stalker)
+					stalker.attack(target)
+				else:
+					stalker.attack(self.enemy_start_locations[0])
 			else:
 				stalker.attack(proxyposition)
 
@@ -177,7 +186,7 @@ class CompetitiveBot(BotAI):
 		stalkers = self.units(UnitTypeId.STALKER)
 		enemy_location = self.enemy_start_locations[0]
 
-		if self.structures(UnitTypeId.PYLON).ready:
+		if self.structures(UnitTypeId.PYLON).ready and self.first_attack:
 			pylon = self.structures(UnitTypeId.PYLON).closest_to(enemy_location)
 			for stalker in stalkers:
 				if stalker.weapon_cooldown == 0:
