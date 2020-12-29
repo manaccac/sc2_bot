@@ -9,8 +9,8 @@ from sc2.units import Units
 from sc2.position import Point2
 from sc2.player import Bot, Computer
 
-class CompetitiveBot(BotAI):
-	NAME: str = "CompetitiveBot"
+class Hendor(BotAI):
+	NAME: str = "Hendor"
 	"""This bot's name"""
 	RACE: Race = Race.Protoss
 	"""This bot's Starcraft 2 race.
@@ -156,15 +156,15 @@ class CompetitiveBot(BotAI):
 	
 	async def attack(self):
 		stalkercount = self.units(UnitTypeId.STALKER).amount
-		stalkers = self.units(UnitTypeId.STALKER).ready.idle
-		target = self.structures.random_or(self.enemy_start_locations[0]).position
+		stalkers = self.units(UnitTypeId.STALKER)
 		
 		if self. structures(UnitTypeId.PYLON).ready:
 			proxy = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
 			proxyposition = proxy.position.random_on_distance(3)
 
 		for stalker in stalkers:
-			if stalkercount >= 8:
+			if stalkercount >= 8 or (stalkercount >= 5 and self.attack == True):
+				self.first_attack = True
 				targets = (self.enemy_units | self.enemy_structures).filter(lambda unit: unit.can_be_attacked)
 				if targets:
 					target = targets.closest_to(stalker)
@@ -174,6 +174,31 @@ class CompetitiveBot(BotAI):
 			else:
 				stalker.attack(proxyposition)
 
+	async def micro(self):
+		stalkers = self.units(UnitTypeId.STALKER)
+		enemy_location = self.enemy_start_locations[0]
+		targets = (self.enemy_units | self.enemy_structures).filter(lambda unit: unit.can_be_attacked)
+
+		if self.structures(UnitTypeId.PYLON).ready and self.first_attack:
+			pylon = self.structures(UnitTypeId.PYLON).closest_to(enemy_location)
+			for stalker in stalkers:
+				#print(stalker.weapon_cooldown)
+				if stalker.weapon_cooldown == 0:
+					if targets:
+						target = targets.closest_to(stalker)
+						stalker.attack(target)
+					else:
+						stalker.attack(self.enemy_start_locations[0])
+				elif stalker.weapon_cooldown < 13:
+					#print(stalker.weapon_cooldown)
+					if targets:
+						target = targets.closest_to(stalker)
+						stalker.attack(target)
+					else:
+						stalker.attack(self.enemy_start_locations[0])
+				else:
+					stalker.move(pylon)
+
 	async def warp_stalker(self):
 		for warpgate in self.structures(UnitTypeId.WARPGATE).ready:
 			abilities = await self.get_available_abilities(warpgate)
@@ -182,19 +207,7 @@ class CompetitiveBot(BotAI):
 				placement = proxy.position.random_on_distance(3)
 				warpgate.warp_in(UnitTypeId.STALKER, placement)
 	
-	async def micro(self):
-		stalkers = self.units(UnitTypeId.STALKER)
-		enemy_location = self.enemy_start_locations[0]
-
-		if self.structures(UnitTypeId.PYLON).ready and self.first_attack:
-			pylon = self.structures(UnitTypeId.PYLON).closest_to(enemy_location)
-			for stalker in stalkers:
-				if stalker.weapon_cooldown == 0:
-					stalker.attack(enemy_location)
-				elif stalker.weapon_cooldown < 0:
-					stalker.move(pylon)
-				else:
-					stalker.move(pylon)
+	
 
 	def on_end(self, result):
 		print("Game ended.")

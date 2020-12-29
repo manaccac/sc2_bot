@@ -8,7 +8,7 @@ import shutil
 import zipfile
 from typing import Optional
 
-from bot import CompetitiveBot as bot
+from bot import Hendor as bot
 
 # Ignore the annoying resource warning from importing sc2 when an SC2 instance isn't running.
 import warnings

@@ -2,7 +2,7 @@ import sys
 
 sys.path.insert(1, "python-sc2")
 
-from bot import CompetitiveBot
+from bot import Hendor
 
 import argparse
 import asyncio
@@ -76,7 +76,7 @@ def parse_arguments():
 
     # Local play arguments
     parser.add_argument("--Sc2Version", type=str, help="The version of Starcraft 2 to load.")
-    parser.add_argument("--ComputerRace", type=str, default="Terran",
+    parser.add_argument("--ComputerRace", type=str, default="Random",
                         help="Computer race. One of [Terran, Zerg, Protoss, Random]. Default is Terran. Only for local play.")
     parser.add_argument("--ComputerDifficulty", type=str, default="VeryHard",
                         help=f"Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]. Default is VeryEasy. Only for local play.")
@@ -104,11 +104,11 @@ def parse_arguments():
 
 def load_bot(args):
     # Load bot
-    competitive_bot = CompetitiveBot()
+    competitive_bot = Hendor()
     # Add opponent_id to the bot class (accessed through self.opponent_id)
     competitive_bot.opponent_id = args.OpponentId
 
-    return Bot(CompetitiveBot.RACE, competitive_bot)
+    return Bot(Hendor.RACE, competitive_bot)
 
 
 def run():
