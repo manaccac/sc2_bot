@@ -4,9 +4,9 @@ from sc2 import Race, Difficulty
 from sc2.player import Bot, Computer
 
 # Load bot
-from bot import Hendor
+from bot import LamaGate
 
-bot = Bot(Race.Terran, Hendor())
+bot = Bot(Race.Terran, LamaGate())
 
 # Start game
 if __name__ == "__main__":

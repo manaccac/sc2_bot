@@ -9,8 +9,8 @@ from sc2.units import Units
 from sc2.position import Point2
 from sc2.player import Bot, Computer
 
-class Hendor(BotAI):
-	NAME: str = "Hendor"
+class LamaGate(BotAI):
+	NAME: str = "LamaGate"
 	"""This bot's name"""
 	RACE: Race = Race.Protoss
 	"""This bot's Starcraft 2 race.
@@ -49,34 +49,35 @@ class Hendor(BotAI):
 		pass
 
 	async def build_workers(self):
-		nexus = self.townhalls.ready.random
-		if (
-			self.can_afford(UnitTypeId.PROBE)
-			and nexus.is_idle
-			and self.workers.amount < self.townhalls.amount * 22
-		):
-			nexus.train(UnitTypeId.PROBE)
+		if self.townhalls.amount != 0:
+			nexus = self.townhalls.ready.random
+			if (
+				self.can_afford(UnitTypeId.PROBE)
+				and nexus.is_idle
+				and self.workers.amount < self.townhalls.amount * 22
+			):
+				nexus.train(UnitTypeId.PROBE)
 	
 	async def buidl_pylon(self):
-		nexus = self.townhalls.ready.random
-		pos = nexus.position.towards(self.enemy_start_locations[0], 10)
-		
-		if (
-			self.supply_left < 3
-			and self.already_pending(UnitTypeId.PYLON) == 0
-			and self.can_afford(UnitTypeId.PYLON)
-		):
-			await self.build(UnitTypeId.PYLON, near = pos)
+		if self.townhalls.amount > 0:
+			nexus = self.townhalls.ready.random
+			pos = nexus.position.towards(self.enemy_start_locations[0], 10)
+			if (
+				self.supply_left < 3
+				and self.already_pending(UnitTypeId.PYLON) == 0
+				and self.can_afford(UnitTypeId.PYLON)
+			):
+				await self.build(UnitTypeId.PYLON, near = pos)
 		
 		#proxy pylon
-		if (
-			self.structures(UnitTypeId.GATEWAY).amount == 4
-			and not self.proxy_built
-			and self.can_afford(UnitTypeId.PYLON)
-		):
-			pos = self.game_info.map_center.towards(self.enemy_start_locations[0], 20)
-			await self.build(UnitTypeId.PYLON, near = pos)
-			self.proxy_built = True
+			if (
+				self.structures(UnitTypeId.GATEWAY).amount == 4
+				and not self.proxy_built
+				and self.can_afford(UnitTypeId.PYLON)
+			):
+				pos = self.game_info.map_center.towards(self.enemy_start_locations[0], 20)
+				await self.build(UnitTypeId.PYLON, near = pos)
+				self.proxy_built = True
 	
 	async def build_gateway(self):
 		if (
@@ -114,12 +115,13 @@ class Hendor(BotAI):
 						await self.build(UnitTypeId.CYBERNETICSCORE, near = pylon)
 
 	async def train_stalker(self):
-		for gateway in self.structures(UnitTypeId.GATEWAY).ready:
-			if (
-				self.can_afford(UnitTypeId.STALKER)
-				and gateway.is_idle
-			):
-				gateway.train(UnitTypeId.STALKER)
+		if self.structures(UnitTypeId.GATEWAY).amount > 0:
+			for gateway in self.structures(UnitTypeId.GATEWAY).ready:
+				if (
+					self.can_afford(UnitTypeId.STALKER)
+					and gateway.is_idle
+				):
+					gateway.train(UnitTypeId.STALKER)
 	
 	async def build_four_gates(self):
 		if (
@@ -131,18 +133,19 @@ class Hendor(BotAI):
 			await self.build(UnitTypeId.GATEWAY, near = pylon)
 	
 	async def chrono(self):
-		if self.structures(UnitTypeId.PYLON):
-			nexus = self.townhalls.ready.random
-			if(
-				not self.structures(UnitTypeId.CYBERNETICSCORE).ready
-				and self.structures(UnitTypeId.PYLON).amount > 0
-			):
-				if nexus.energy >= 50:
-					nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, nexus)
-			else:
-				if nexus.energy >= 50:
-					cybercore = self.structures(UnitTypeId.CYBERNETICSCORE).ready.random
-					nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, cybercore)
+		if self.townhalls.amount > 0:
+			if self.structures(UnitTypeId.PYLON):
+				nexus = self.townhalls.ready.random
+				if(
+					not self.structures(UnitTypeId.CYBERNETICSCORE).ready
+					and self.structures(UnitTypeId.PYLON).amount > 0
+				):
+					if nexus.energy >= 50:
+						nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, nexus)
+				else:
+					if nexus.energy >= 50:
+						cybercore = self.structures(UnitTypeId.CYBERNETICSCORE).ready.random
+						nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, cybercore)
 
 	
 	async def warpgate_research(self):
@@ -179,33 +182,28 @@ class Hendor(BotAI):
 		enemy_location = self.enemy_start_locations[0]
 		targets = (self.enemy_units | self.enemy_structures).filter(lambda unit: unit.can_be_attacked)
 
-		if self.structures(UnitTypeId.PYLON).ready and self.first_attack:
+		if self.structures(UnitTypeId.PYLON).ready:
 			pylon = self.structures(UnitTypeId.PYLON).closest_to(enemy_location)
 			for stalker in stalkers:
-				#print(stalker.weapon_cooldown)
 				if stalker.weapon_cooldown == 0:
 					if targets:
 						target = targets.closest_to(stalker)
 						stalker.attack(target)
-					else:
-						stalker.attack(self.enemy_start_locations[0])
 				elif stalker.weapon_cooldown < 13:
-					#print(stalker.weapon_cooldown)
 					if targets:
 						target = targets.closest_to(stalker)
 						stalker.attack(target)
-					else:
-						stalker.attack(self.enemy_start_locations[0])
 				else:
 					stalker.move(pylon)
 
 	async def warp_stalker(self):
 		for warpgate in self.structures(UnitTypeId.WARPGATE).ready:
-			abilities = await self.get_available_abilities(warpgate)
-			proxy = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
-			if AbilityId.WARPGATETRAIN_STALKER in abilities and self.can_afford(UnitTypeId.STALKER):
-				placement = proxy.position.random_on_distance(3)
-				warpgate.warp_in(UnitTypeId.STALKER, placement)
+			if self.structures(UnitTypeId.PYLON).amount > 0:
+				abilities = await self.get_available_abilities(warpgate)
+				proxy = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
+				if AbilityId.WARPGATETRAIN_STALKER in abilities and self.can_afford(UnitTypeId.STALKER):
+					placement = proxy.position.random_on_distance(3)
+					warpgate.warp_in(UnitTypeId.STALKER, placement)
 	
 	
 

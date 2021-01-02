@@ -1,7 +1,7 @@
 import sc2
 
 
-class Hendor(sc2.BotAI):
+class LamaGate(sc2.BotAI):
     async def on_start(self):
         print("Game started")
         # Do things here before the game starts

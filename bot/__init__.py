@@ -1,1 +1,1 @@
-from .bot import Hendor
+from .bot import LamaGate
